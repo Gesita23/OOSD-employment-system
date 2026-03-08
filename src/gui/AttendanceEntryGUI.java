@@ -1,12 +1,12 @@
-package PayrollManagementSystem;
+package gui;
 
-import javax.swing.*;
-import javax.swing.border.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.List;
+import javax.swing.*;
+import javax.swing.border.*;
 
 public class AttendanceEntryGUI {
 
@@ -99,7 +99,7 @@ public class AttendanceEntryGUI {
     }
 
     // ── Build UI ─────────────────────────────────────────────────────────────
-    private void buildUI() {
+    public void buildUI() {
         seedData();
         calSelected = Calendar.getInstance();
 

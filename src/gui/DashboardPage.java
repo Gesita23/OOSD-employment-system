@@ -47,8 +47,16 @@ public class DashboardPage extends JFrame {
         JMenu menuEmployee = new JMenu("Employee");
         JMenuItem miAdd    = new JMenuItem("Add Employee");
         JMenuItem miUpdate = new JMenuItem("Update Employee");
+        JMenuItem miView   = new JMenuItem("View Employees");
+        JMenuItem miDelete = new JMenuItem("Delete Employee");
         menuEmployee.add(miAdd);
         menuEmployee.add(miUpdate);
+        menuEmployee.add(miView);
+        menuEmployee.add(miDelete);
+
+        JMenu menuAttendance = new JMenu("Attendance");
+        JMenuItem miAttendance = new JMenuItem("Attendance Entry");
+        menuAttendance.add(miAttendance);
 
         JMenu menuHelp = new JMenu("Help");
         JMenuItem miAbout = new JMenuItem("About");
@@ -56,6 +64,7 @@ public class DashboardPage extends JFrame {
 
         menuBar.add(menuFile);
         menuBar.add(menuEmployee);
+        menuBar.add(menuAttendance);
         menuBar.add(menuHelp);
         setJMenuBar(menuBar);
 
@@ -73,12 +82,18 @@ public class DashboardPage extends JFrame {
         JPanel navButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
         navButtons.setOpaque(false);
 
-        JButton btnAddNav    = createNavButton("➕ Add Employee");
-        JButton btnUpdateNav = createNavButton("✏️ Update Employee");
-        JButton btnLogoutNav = createNavButton("🚪 Logout");
+        JButton btnAddNav        = createNavButton("➕ Add Employee");
+        JButton btnUpdateNav     = createNavButton("✏️ Update Employee");
+        JButton btnViewNav       = createNavButton("👥 View Employees");
+        JButton btnDeleteNav     = createNavButton("🗑 Delete Employee");
+        JButton btnAttendanceNav = createNavButton("📋 Attendance");
+        JButton btnLogoutNav     = createNavButton("🚪 Logout");
 
         navButtons.add(btnAddNav);
         navButtons.add(btnUpdateNav);
+        navButtons.add(btnViewNav);
+        navButtons.add(btnDeleteNav);
+        navButtons.add(btnAttendanceNav);
         navButtons.add(btnLogoutNav);
         navBar.add(navButtons, BorderLayout.EAST);
 
@@ -154,13 +169,19 @@ public class DashboardPage extends JFrame {
         // Give scroll pane more space
         scrollPane.setPreferredSize(new Dimension(0, 350));
 
-        // ── Events ───────────────────────────────────────────────────────────
+      
         btnSearch.addActionListener(e -> loadEmployeeTable(txtSearch.getText().trim()));
         btnRefresh.addActionListener(e -> { txtSearch.setText(""); loadEmployeeTable(""); loadDashboardStats(); });
         btnAddNav.addActionListener(e -> openAddEmployee());
         miAdd.addActionListener(e -> openAddEmployee());
         btnUpdateNav.addActionListener(e -> openUpdateEmployee());
         miUpdate.addActionListener(e -> openUpdateEmployee());
+        btnViewNav.addActionListener(e -> new ViewEmployeesGUI().buildUI());
+        miView.addActionListener(e -> new ViewEmployeesGUI().buildUI());
+        btnDeleteNav.addActionListener(e -> new DeleteEmployees().buildUI());
+        miDelete.addActionListener(e -> new DeleteEmployees().buildUI());
+        btnAttendanceNav.addActionListener(e -> new AttendanceEntryGUI().buildUI());
+        miAttendance.addActionListener(e -> new AttendanceEntryGUI().buildUI());
         btnLogoutNav.addActionListener(e -> logout());
         miLogout.addActionListener(e -> logout());
         miExit.addActionListener(e -> System.exit(0));
@@ -176,7 +197,7 @@ public class DashboardPage extends JFrame {
         });
     }
 
-    // ── Data loaders ─────────────────────────────────────────────────────────
+   
 
     private void loadDashboardStats() {
         lblTotal.setText(String.valueOf(dao.getTotalEmployees()));

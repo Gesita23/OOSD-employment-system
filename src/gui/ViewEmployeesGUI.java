@@ -1,12 +1,12 @@
-package PayrollManagementSystem;
+package gui;
 
-import javax.swing.*;
-import javax.swing.border.*;
-import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
 import java.util.List;
+import javax.swing.*;
+import javax.swing.border.*;
+import javax.swing.table.*;
 
 public class ViewEmployeesGUI {
 
@@ -87,7 +87,7 @@ public class ViewEmployeesGUI {
     }
 
     // ── Build the window ─────────────────────────────────────────────────────
-    private void buildUI() {
+    public void buildUI() {
         seedData();
 
         frame = new JFrame("Payroll Management  ·  View Employees");

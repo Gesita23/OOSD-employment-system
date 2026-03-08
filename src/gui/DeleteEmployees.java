@@ -1,11 +1,11 @@
-package PayrollManagementSystem;
+package gui;
 
-import javax.swing.*;
-import javax.swing.border.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.HashMap;
 import java.util.Map;
+import javax.swing.*;
+import javax.swing.border.*;
 
 public class DeleteEmployees {
 
@@ -73,7 +73,7 @@ public class DeleteEmployees {
     }
 
     // ── Build the window ─────────────────────────────────────────────────────
-    private void buildUI() {
+    public void buildUI() {
         seedData();
 
         frame = new JFrame("Payroll Management  ·  Delete Employee");
