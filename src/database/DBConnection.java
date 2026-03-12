@@ -14,7 +14,7 @@ public class DBConnection {
 
     // ── Option A: Windows Authentication (try this first) ────────────────
     private static final String URL =
-        "jdbc:sqlserver://localhost:1433;" +
+        "jdbc:sqlserver://GEET\\SQLEXPRESS;" +
         "databaseName=employee_management;" +
         "integratedSecurity=true;" +
         "encrypt=false;" +
