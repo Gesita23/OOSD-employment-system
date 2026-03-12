@@ -1,15 +1,13 @@
 package gui;
 
 import dao.EmployeeDAO;
+import database.DBConnection;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.*;
 
-/**
- * Login Page – Interface #1
- */
 public class LoginPage extends JFrame {
 
     private JTextField     txtUsername;
@@ -22,6 +20,14 @@ public class LoginPage extends JFrame {
 
     public LoginPage() {
         initComponents();
+        warmUpConnection();   // connect in background — UI stays responsive
+    }
+
+    // ── Warm up DB connection in background so UI never freezes ──────────────
+    private void warmUpConnection() {
+        new Thread(() -> {
+            DBConnection.getConnection();  // fires once silently in background
+        }, "db-warmup").start();
     }
 
     private void initComponents() {
@@ -31,11 +37,9 @@ public class LoginPage extends JFrame {
         setLocationRelativeTo(null);
         setResizable(false);
 
-        // ── Main panel ────────────────────────────────────────────────────────
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(new Color(30, 60, 114));
 
-        // ── Header ───────────────────────────────────────────────────────────
         JPanel headerPanel = new JPanel();
         headerPanel.setBackground(new Color(30, 60, 114));
         headerPanel.setBorder(new EmptyBorder(25, 0, 15, 0));
@@ -56,9 +60,8 @@ public class LoginPage extends JFrame {
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setBackground(new Color(30, 60, 114));
         topPanel.add(headerPanel, BorderLayout.NORTH);
-        topPanel.add(subPanel, BorderLayout.CENTER);
+        topPanel.add(subPanel,    BorderLayout.CENTER);
 
-        // ── Form panel ───────────────────────────────────────────────────────
         JPanel formPanel = new JPanel(new GridBagLayout());
         formPanel.setBackground(Color.WHITE);
         formPanel.setBorder(new EmptyBorder(30, 40, 30, 40));
@@ -68,7 +71,6 @@ public class LoginPage extends JFrame {
         gbc.insets    = new Insets(6, 0, 6, 0);
         gbc.gridwidth = GridBagConstraints.REMAINDER;
 
-        // Username
         JLabel lblUser = new JLabel("Username");
         lblUser.setFont(new Font("Segoe UI", Font.BOLD, 13));
         gbc.gridy = 0;
@@ -80,7 +82,6 @@ public class LoginPage extends JFrame {
         gbc.gridy = 1;
         formPanel.add(txtUsername, gbc);
 
-        // Password
         JLabel lblPass = new JLabel("Password");
         lblPass.setFont(new Font("Segoe UI", Font.BOLD, 13));
         gbc.gridy = 2;
@@ -92,14 +93,12 @@ public class LoginPage extends JFrame {
         gbc.gridy = 3;
         formPanel.add(txtPassword, gbc);
 
-        // Show password checkbox
         chkShowPassword = new JCheckBox("Show Password");
         chkShowPassword.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         chkShowPassword.setBackground(Color.WHITE);
         gbc.gridy = 4;
         formPanel.add(chkShowPassword, gbc);
 
-        // Status label
         lblStatus = new JLabel(" ");
         lblStatus.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         lblStatus.setForeground(Color.RED);
@@ -107,7 +106,6 @@ public class LoginPage extends JFrame {
         gbc.gridy = 5;
         formPanel.add(lblStatus, gbc);
 
-        // Buttons
         JPanel btnPanel = new JPanel(new GridLayout(1, 2, 10, 0));
         btnPanel.setBackground(Color.WHITE);
 
@@ -130,11 +128,9 @@ public class LoginPage extends JFrame {
 
         btnPanel.add(btnLogin);
         btnPanel.add(btnClear);
-
         gbc.gridy = 6;
         formPanel.add(btnPanel, gbc);
 
-        // Sign Up link button
         btnSignUp = new JButton("Don't have an account? Sign Up");
         btnSignUp.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         btnSignUp.setForeground(new Color(30, 60, 114));
@@ -146,12 +142,10 @@ public class LoginPage extends JFrame {
         gbc.gridy = 7;
         formPanel.add(btnSignUp, gbc);
 
-        // ── Assemble ─────────────────────────────────────────────────────────
-        mainPanel.add(topPanel, BorderLayout.NORTH);
-        mainPanel.add(formPanel, BorderLayout.CENTER);
+        mainPanel.add(topPanel,   BorderLayout.NORTH);
+        mainPanel.add(formPanel,  BorderLayout.CENTER);
         add(mainPanel);
 
-        // ── Event listeners ───────────────────────────────────────────────────
         btnLogin.addActionListener(e -> performLogin());
         btnClear.addActionListener(e -> clearFields());
         btnSignUp.addActionListener(e -> {
@@ -160,13 +154,9 @@ public class LoginPage extends JFrame {
         });
 
         chkShowPassword.addActionListener(e -> {
-            if (chkShowPassword.isSelected())
-                txtPassword.setEchoChar((char) 0);
-            else
-                txtPassword.setEchoChar('•');
+            txtPassword.setEchoChar(chkShowPassword.isSelected() ? (char) 0 : '•');
         });
 
-        // Allow pressing Enter to login
         txtPassword.addKeyListener(new KeyAdapter() {
             @Override public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_ENTER) performLogin();
@@ -183,15 +173,27 @@ public class LoginPage extends JFrame {
             return;
         }
 
-        if (dao.validateLogin(username, password)) {
-            JOptionPane.showMessageDialog(this, "Login Successful! Welcome, " + username,
-                    "Success", JOptionPane.INFORMATION_MESSAGE);
-            new DashboardPage().setVisible(true);
-            dispose();
-        } else {
-            lblStatus.setText("Invalid username or password. Try again.");
-            txtPassword.setText("");
-        }
+        // Disable button + show checking message so user knows it's working
+        btnLogin.setEnabled(false);
+        lblStatus.setForeground(new Color(30, 60, 114));
+        lblStatus.setText("Checking credentials...");
+
+        // Run DB check in background thread — never blocks the UI
+        new Thread(() -> {
+            boolean valid = dao.validateLogin(username, password);
+            SwingUtilities.invokeLater(() -> {
+                btnLogin.setEnabled(true);
+                if (valid) {
+                    lblStatus.setText(" ");
+                    new DashboardPage().setVisible(true);
+                    dispose();
+                } else {
+                    lblStatus.setForeground(Color.RED);
+                    lblStatus.setText("Invalid username or password. Try again.");
+                    txtPassword.setText("");
+                }
+            });
+        }, "login-thread").start();
     }
 
     private void clearFields() {
@@ -203,9 +205,8 @@ public class LoginPage extends JFrame {
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            try {
-                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            } catch (Exception ignored) {}
+            try { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); }
+            catch (Exception ignored) {}
             new LoginPage().setVisible(true);
         });
     }

@@ -1,8 +1,11 @@
 package gui;
 
+import dao.EmployeeDAO;
+import model.Employee;
+
 import java.awt.*;
 import java.awt.event.*;
-import java.util.*;
+import java.util.ArrayList;
 import java.util.List;
 import javax.swing.*;
 import javax.swing.border.*;
@@ -10,22 +13,8 @@ import javax.swing.table.*;
 
 public class ViewEmployeesGUI {
 
-    // ── Mock Employee ────────────────────────────────────────────────────────
-    static class Employee {
-        final int    id;
-        final String name, department, position, email, phone, status;
-
-        Employee(int id, String name, String department,
-                 String position, String email, String phone, String status) {
-            this.id         = id;
-            this.name       = name;
-            this.department = department;
-            this.position   = position;
-            this.email      = email;
-            this.phone      = phone;
-            this.status     = status;
-        }
-    }
+    // ── DAO ──────────────────────────────────────────────────────────────────
+    private final EmployeeDAO dao = new EmployeeDAO();
 
     // ── Colour palette ───────────────────────────────────────────────────────
     private static final Color BG         = new Color(0xF4F6F9);
@@ -47,23 +36,22 @@ public class ViewEmployeesGUI {
 
     // ── Fonts ────────────────────────────────────────────────────────────────
     private static final Font FONT_TITLE  = new Font("Segoe UI", Font.BOLD,  20);
-    private static final Font FONT_LABEL  = new Font("Segoe UI", Font.BOLD,  12);
     private static final Font FONT_FIELD  = new Font("Segoe UI", Font.PLAIN, 13);
     private static final Font FONT_BTN    = new Font("Segoe UI", Font.BOLD,  12);
     private static final Font FONT_TABLE  = new Font("Segoe UI", Font.PLAIN, 13);
     private static final Font FONT_HEADER = new Font("Segoe UI", Font.BOLD,  12);
 
     // ── Data ─────────────────────────────────────────────────────────────────
-    private final List<Employee> allEmployees = new ArrayList<>();
+    private List<Employee> allEmployees = new ArrayList<>();
 
     // ── UI components ────────────────────────────────────────────────────────
-    private JFrame             frame;
-    private JTextField         searchField;
-    private JComboBox<String>  deptFilter;
-    private JTable             table;
-    private DefaultTableModel  tableModel;
-    private JLabel             countLabel;
-    private JLabel             statusBar;
+    private JFrame            frame;
+    private JTextField        searchField;
+    private JComboBox<String> deptFilter;
+    private JTable            table;
+    private DefaultTableModel tableModel;
+    private JLabel            countLabel;
+    private JLabel            statusBar;
 
     // ── Entry point ──────────────────────────────────────────────────────────
     public static void main(String[] args) {
@@ -72,26 +60,22 @@ public class ViewEmployeesGUI {
         SwingUtilities.invokeLater(() -> new ViewEmployeesGUI().buildUI());
     }
 
-    // ── Seed mock data ───────────────────────────────────────────────────────
-    private void seedData() {
-        allEmployees.add(new Employee(1001, "Alice Smith",    "Engineering", "Software Engineer",  "alice@company.com",  "555-0101", "Active"));
-        allEmployees.add(new Employee(1002, "Bob Johnson",    "Sales",       "Sales Executive",    "bob@company.com",    "555-0102", "Active"));
-        allEmployees.add(new Employee(1003, "Carol Williams", "HR",          "HR Manager",         "carol@company.com",  "555-0103", "Active"));
-        allEmployees.add(new Employee(1004, "David Lee",      "Finance",     "Financial Analyst",  "david@company.com",  "555-0104", "Active"));
-        allEmployees.add(new Employee(1005, "Eva Martinez",   "Engineering", "DevOps Engineer",    "eva@company.com",    "555-0105", "Active"));
-        allEmployees.add(new Employee(1006, "Frank Chen",     "Engineering", "Backend Developer",  "frank@company.com",  "555-0106", "Inactive"));
-        allEmployees.add(new Employee(1007, "Grace Kim",      "Sales",       "Account Manager",    "grace@company.com",  "555-0107", "Active"));
-        allEmployees.add(new Employee(1008, "Henry Davis",    "Finance",     "Accountant",         "henry@company.com",  "555-0108", "Active"));
-        allEmployees.add(new Employee(1009, "Irene Lopez",    "HR",          "Recruiter",          "irene@company.com",  "555-0109", "Active"));
-        allEmployees.add(new Employee(1010, "James Wilson",   "Engineering", "Frontend Developer", "james@company.com",  "555-0110", "Inactive"));
+    // ── Load from database ───────────────────────────────────────────────────
+    private void loadFromDB() {
+        allEmployees = dao.getAllEmployees();
+    }
+
+    // ── Convenience: first + last name joined ────────────────────────────────
+    private String fullName(Employee e) {
+        return e.getFirstName() + " " + e.getLastName();
     }
 
     // ── Build the window ─────────────────────────────────────────────────────
     public void buildUI() {
-        seedData();
+        loadFromDB();
 
-        frame = new JFrame("Payroll Management  ·  View Employees");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame = new JFrame("Employee Management System  ·  View Employees");
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.setSize(980, 640);
         frame.setLocationRelativeTo(null);
         frame.setResizable(true);
@@ -104,6 +88,8 @@ public class ViewEmployeesGUI {
         root.add(buildHeader(),    BorderLayout.NORTH);
         root.add(buildBody(),      BorderLayout.CENTER);
         root.add(buildStatusBar(), BorderLayout.SOUTH);
+
+        populateDeptFilter();
 
         frame.setVisible(true);
     }
@@ -139,22 +125,20 @@ public class ViewEmployeesGUI {
         body.setBackground(BG);
         body.setBorder(new EmptyBorder(20, 24, 0, 24));
 
-        body.add(buildToolbar(), BorderLayout.NORTH);
+        body.add(buildToolbar(),   BorderLayout.NORTH);
         body.add(buildTableCard(), BorderLayout.CENTER);
 
         return body;
     }
 
-    // ── Toolbar: search + filter + refresh ───────────────────────────────────
+    // ── Toolbar ──────────────────────────────────────────────────────────────
     private JPanel buildToolbar() {
         JPanel toolbar = new JPanel(new BorderLayout(12, 0));
         toolbar.setOpaque(false);
 
-        // Left: search + dept filter
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         left.setOpaque(false);
 
-        // Search field
         searchField = new JTextField(22);
         searchField.setFont(FONT_FIELD);
         searchField.setBackground(CARD_BG);
@@ -167,9 +151,8 @@ public class ViewEmployeesGUI {
             @Override public void keyReleased(KeyEvent e) { applyFilters(); }
         });
 
-        // Department filter
-        String[] depts = {"All Departments", "Engineering", "Sales", "HR", "Finance"};
-        deptFilter = new JComboBox<>(depts);
+        // Populated dynamically after DB load
+        deptFilter = new JComboBox<>(new String[]{"All Departments"});
         deptFilter.setFont(FONT_FIELD);
         deptFilter.setBackground(CARD_BG);
         deptFilter.setForeground(TEXT_MAIN);
@@ -182,7 +165,6 @@ public class ViewEmployeesGUI {
         left.add(new JLabel("Department:"));
         left.add(deptFilter);
 
-        // Right: count + refresh
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         right.setOpaque(false);
 
@@ -235,7 +217,6 @@ public class ViewEmployeesGUI {
         table.setFocusable(false);
         table.getTableHeader().setReorderingAllowed(false);
 
-        // Header style
         JTableHeader th = table.getTableHeader();
         th.setFont(FONT_HEADER);
         th.setBackground(new Color(0xEEF2F8));
@@ -243,13 +224,12 @@ public class ViewEmployeesGUI {
         th.setPreferredSize(new Dimension(0, 38));
         th.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, BORDER_CLR));
 
-        // Column widths
         int[] widths = {60, 160, 120, 160, 190, 100, 80};
         for (int i = 0; i < widths.length; i++) {
             table.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
         }
 
-        // Status column custom renderer (badge)
+        // Status badge renderer
         table.getColumnModel().getColumn(6).setCellRenderer(new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable t, Object val,
@@ -257,14 +237,14 @@ public class ViewEmployeesGUI {
                 JLabel lbl = new JLabel(val == null ? "" : val.toString(), SwingConstants.CENTER);
                 lbl.setFont(new Font("Segoe UI", Font.BOLD, 11));
                 lbl.setOpaque(true);
-                boolean active = "Active".equals(val);
+                boolean active = "Active".equalsIgnoreCase(val == null ? "" : val.toString());
                 lbl.setForeground(active ? ACTIVE_CLR : INACTIVE);
                 lbl.setBackground(sel ? ROW_SEL : (row % 2 == 0 ? CARD_BG : ROW_ALT));
                 return lbl;
             }
         });
 
-        // Department column custom renderer (badge)
+        // Department badge renderer
         table.getColumnModel().getColumn(2).setCellRenderer(new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable t, Object val,
@@ -285,7 +265,7 @@ public class ViewEmployeesGUI {
             }
         });
 
-        // Center-align ID column
+        // Centre-align ID column
         DefaultTableCellRenderer center = new DefaultTableCellRenderer();
         center.setHorizontalAlignment(SwingConstants.CENTER);
         table.getColumnModel().getColumn(0).setCellRenderer(center);
@@ -313,7 +293,7 @@ public class ViewEmployeesGUI {
         statusBar.setForeground(TEXT_MUTED);
         bar.add(statusBar, BorderLayout.WEST);
 
-        JLabel info = new JLabel("Data is mock — will be linked to MySQL.");
+        JLabel info = new JLabel("Live data from SQL Server.");
         info.setFont(new Font("Segoe UI", Font.ITALIC, 11));
         info.setForeground(new Color(0xAABDD6));
         bar.add(info, BorderLayout.EAST);
@@ -321,49 +301,69 @@ public class ViewEmployeesGUI {
         return bar;
     }
 
-    // ── Logic ─────────────────────────────────────────────────────────────────
+    // ── Populate dept filter dynamically from DB data ─────────────────────────
+    private void populateDeptFilter() {
+        deptFilter.removeAllItems();
+        deptFilter.addItem("All Departments");
+        allEmployees.stream()
+                .map(Employee::getDepartment)
+                .distinct()
+                .sorted()
+                .forEach(deptFilter::addItem);
+    }
 
+    // ── Populate table ────────────────────────────────────────────────────────
     private void populateTable(List<Employee> employees) {
         tableModel.setRowCount(0);
         for (Employee e : employees) {
             tableModel.addRow(new Object[]{
-                e.id, e.name, e.department, e.position, e.email, e.phone, e.status
+                e.getEmployeeId(),
+                fullName(e),           // getFirstName() + " " + getLastName()
+                e.getDepartment(),
+                e.getPosition(),
+                e.getEmail(),
+                e.getPhone(),
+                e.getStatus()
             });
         }
         updateCount(employees.size());
     }
 
+    // ── Filter logic ──────────────────────────────────────────────────────────
     private void applyFilters() {
-        String query = searchField.getText().trim().toLowerCase();
-        String dept  = (String) deptFilter.getSelectedItem();
+        String query    = searchField.getText().trim().toLowerCase();
+        String dept     = (String) deptFilter.getSelectedItem();
         boolean allDept = "All Departments".equals(dept);
 
         List<Employee> filtered = new ArrayList<>();
         for (Employee e : allEmployees) {
-            boolean matchDept   = allDept || e.department.equals(dept);
+            boolean matchDept   = allDept || e.getDepartment().equals(dept);
             boolean matchSearch = query.isEmpty()
-                    || e.name.toLowerCase().contains(query)
-                    || String.valueOf(e.id).contains(query)
-                    || e.email.toLowerCase().contains(query)
-                    || e.position.toLowerCase().contains(query);
+                    || fullName(e).toLowerCase().contains(query)
+                    || String.valueOf(e.getEmployeeId()).contains(query)
+                    || e.getEmail().toLowerCase().contains(query)
+                    || e.getPosition().toLowerCase().contains(query)
+                    || e.getFirstName().toLowerCase().contains(query)
+                    || e.getLastName().toLowerCase().contains(query);
 
             if (matchDept && matchSearch) filtered.add(e);
         }
 
         populateTable(filtered);
 
-        String deptStr   = allDept ? "all departments" : dept;
-        String queryStr  = query.isEmpty() ? "" : " matching \"" + query + "\"";
+        String deptStr  = allDept ? "all departments" : dept;
+        String queryStr = query.isEmpty() ? "" : " matching \"" + query + "\"";
         statusBar.setText("Showing " + filtered.size() + " employee(s) in " + deptStr + queryStr + ".");
     }
 
+    // ── Refresh from DB ───────────────────────────────────────────────────────
     private void handleRefresh() {
-        // TODO: reload from DB — e.g., allEmployees = employeeDAO.findAll();
+        loadFromDB();
+        populateDeptFilter();
         searchField.setText("");
         deptFilter.setSelectedIndex(0);
         populateTable(allEmployees);
-        statusBar.setText("List refreshed. Showing all " + allEmployees.size() + " employees.");
-        setStatus("List refreshed successfully.", ACCENT);
+        setStatus("List refreshed. Showing all " + allEmployees.size() + " employees.", ACCENT);
     }
 
     private void updateCount(int count) {

@@ -134,6 +134,8 @@ public class DashboardPage extends JFrame {
         miDelete.addActionListener(e         -> new DeleteEmployees().buildUI());
         btnAttendanceNav.addActionListener(e -> new AttendanceEntryGUI().buildUI());
         miAttendance.addActionListener(e     -> new AttendanceEntryGUI().buildUI());
+        btnPayrollNav.addActionListener(e    -> new SalaryManagementGUI().buildUI());
+        miPayroll.addActionListener(e        -> new SalaryManagementGUI().buildUI());
       
         btnLogoutNav.addActionListener(e     -> logout());
         miLogout.addActionListener(e         -> logout());
@@ -146,6 +148,7 @@ public class DashboardPage extends JFrame {
         qaView.addActionListener(e  -> new ViewEmployeesGUI().buildUI());
         qaDel.addActionListener(e   -> new DeleteEmployees().buildUI());
         qaAtt.addActionListener(e   -> new AttendanceEntryGUI().buildUI());
+        qaPay.addActionListener(e   -> new SalaryManagementGUI().buildUI());
        
     }
 
@@ -163,9 +166,7 @@ public class DashboardPage extends JFrame {
 
     private void openAddEmployee()    { new AddEmployeePage(this).setVisible(true); }
     private void openUpdateEmployee() {
-        JOptionPane.showMessageDialog(this,
-            "Select an employee from View Employees first, then update from there.",
-            "Tip", JOptionPane.INFORMATION_MESSAGE);
+        new UpdateEmployeePage(this);
     }
     public void refresh() { loadStats(); }
 

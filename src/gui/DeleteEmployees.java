@@ -1,51 +1,36 @@
 package gui;
 
+import dao.EmployeeDAO;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.HashMap;
-import java.util.Map;
 import javax.swing.*;
 import javax.swing.border.*;
+import model.Employee;
 
 public class DeleteEmployees {
 
-    // ── Mock Employee ────────────────────────────────────────────────────────
-    static class Employee {
-        final int    id;
-        final String name, department, position, email, phone;
-
-        Employee(int id, String name, String department,
-                 String position, String email, String phone) {
-            this.id         = id;
-            this.name       = name;
-            this.department = department;
-            this.position   = position;
-            this.email      = email;
-            this.phone      = phone;
-        }
-    }
+    // ── DAO ──────────────────────────────────────────────────────────────────
+    private final EmployeeDAO dao = new EmployeeDAO();
 
     // ── Colour palette ───────────────────────────────────────────────────────
-    private static final Color BG          = new Color(0xF4F6F9);
-    private static final Color CARD_BG     = Color.WHITE;
-    private static final Color PRIMARY     = new Color(0x1A3C6E);   // deep navy
-    private static final Color ACCENT      = new Color(0xE63946);   // alert red
-    private static final Color SUCCESS     = new Color(0x2D9B6F);   // green
-    private static final Color BORDER_CLR  = new Color(0xDDE3EC);
-    private static final Color TEXT_MAIN   = new Color(0x1C2B3A);
-    private static final Color TEXT_MUTED  = new Color(0x7A8A9C);
-    private static final Color FIELD_BG    = new Color(0xF0F4FA);
+    private static final Color BG         = new Color(0xF4F6F9);
+    private static final Color CARD_BG    = Color.WHITE;
+    private static final Color PRIMARY    = new Color(0x1A3C6E);
+    private static final Color ACCENT     = new Color(0xE63946);
+    private static final Color SUCCESS    = new Color(0x2D9B6F);
+    private static final Color BORDER_CLR = new Color(0xDDE3EC);
+    private static final Color TEXT_MAIN  = new Color(0x1C2B3A);
+    private static final Color TEXT_MUTED = new Color(0x7A8A9C);
+    private static final Color FIELD_BG   = new Color(0xF0F4FA);
 
     // ── Fonts ────────────────────────────────────────────────────────────────
-    private static final Font FONT_TITLE   = new Font("Segoe UI", Font.BOLD,  20);
-    private static final Font FONT_LABEL   = new Font("Segoe UI", Font.BOLD,  12);
-    private static final Font FONT_FIELD   = new Font("Segoe UI", Font.PLAIN, 14);
-    private static final Font FONT_BTN     = new Font("Segoe UI", Font.BOLD,  13);
-    private static final Font FONT_DETAIL  = new Font("Segoe UI", Font.PLAIN, 13);
-    private static final Font FONT_VALUE   = new Font("Segoe UI", Font.BOLD,  13);
+    private static final Font FONT_TITLE  = new Font("Segoe UI", Font.BOLD,  20);
+    private static final Font FONT_LABEL  = new Font("Segoe UI", Font.BOLD,  12);
+    private static final Font FONT_FIELD  = new Font("Segoe UI", Font.PLAIN, 14);
+    private static final Font FONT_BTN    = new Font("Segoe UI", Font.BOLD,  13);
+    private static final Font FONT_VALUE  = new Font("Segoe UI", Font.BOLD,  13);
 
     // ── State ────────────────────────────────────────────────────────────────
-    private final Map<Integer, Employee> mockDb = new HashMap<>();
     private Employee currentEmployee = null;
 
     // ── UI components ────────────────────────────────────────────────────────
@@ -53,7 +38,7 @@ public class DeleteEmployees {
     private JTextField idField;
     private JButton    searchBtn, deleteBtn;
     private JPanel     resultCard;
-    private JLabel     lblName, lblDept, lblPos, lblEmail, lblPhone, lblEmpId;
+    private JLabel     lblEmpId, lblName, lblDept, lblPos, lblEmail, lblPhone;
     private JLabel     statusBar;
 
     // ── Entry point ──────────────────────────────────────────────────────────
@@ -63,33 +48,26 @@ public class DeleteEmployees {
         SwingUtilities.invokeLater(() -> new DeleteEmployees().buildUI());
     }
 
-    // ── Seed mock data ───────────────────────────────────────────────────────
-    private void seedData() {
-        mockDb.put(1001, new Employee(1001, "Alice Smith",    "Engineering", "Software Engineer",  "alice@company.com",  "555-0101"));
-        mockDb.put(1002, new Employee(1002, "Bob Johnson",    "Sales",       "Sales Executive",    "bob@company.com",    "555-0102"));
-        mockDb.put(1003, new Employee(1003, "Carol Williams", "HR",          "HR Manager",         "carol@company.com",  "555-0103"));
-        mockDb.put(1004, new Employee(1004, "David Lee",      "Finance",     "Financial Analyst",  "david@company.com",  "555-0104"));
-        mockDb.put(1005, new Employee(1005, "Eva Martinez",   "Engineering", "DevOps Engineer",    "eva@company.com",    "555-0105"));
+    // ── Convenience: first + last name joined ────────────────────────────────
+    private String fullName(Employee e) {
+        return e.getFirstName() + " " + e.getLastName();
     }
 
     // ── Build the window ─────────────────────────────────────────────────────
     public void buildUI() {
-        seedData();
-
-        frame = new JFrame("Payroll Management  ·  Delete Employee");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(560, 600);
+        frame = new JFrame("Employee Management System  ·  Delete Employee");
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        frame.setSize(560, 580);
         frame.setLocationRelativeTo(null);
         frame.setResizable(false);
 
-        JPanel root = new JPanel();
-        root.setLayout(new BorderLayout(0, 0));
+        JPanel root = new JPanel(new BorderLayout(0, 0));
         root.setBackground(BG);
         frame.setContentPane(root);
 
-        root.add(buildHeader(),     BorderLayout.NORTH);
-        root.add(buildBody(),       BorderLayout.CENTER);
-        root.add(buildStatusBar(),  BorderLayout.SOUTH);
+        root.add(buildHeader(),    BorderLayout.NORTH);
+        root.add(buildBody(),      BorderLayout.CENTER);
+        root.add(buildStatusBar(), BorderLayout.SOUTH);
 
         frame.setVisible(true);
     }
@@ -165,16 +143,10 @@ public class DeleteEmployees {
         card.add(top,       BorderLayout.CENTER);
         card.add(searchBtn, BorderLayout.EAST);
 
-        // hint row
-        JLabel hint = new JLabel("Try IDs: 1001, 1002, 1003, 1004, 1005");
-        hint.setFont(new Font("Segoe UI", Font.ITALIC, 11));
-        hint.setForeground(TEXT_MUTED);
-
         JPanel wrap = new JPanel(new BorderLayout(0, 8));
         wrap.setOpaque(false);
         wrap.setMaximumSize(new Dimension(Integer.MAX_VALUE, 90));
         wrap.add(card, BorderLayout.CENTER);
-        wrap.add(hint, BorderLayout.SOUTH);
         return wrap;
     }
 
@@ -185,11 +157,9 @@ public class DeleteEmployees {
         resultCard.setBorder(compound(16));
         resultCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 220));
 
-        // placeholder state
         JLabel placeholder = new JLabel("No employee loaded — enter an ID and click Search.", SwingConstants.CENTER);
         placeholder.setFont(new Font("Segoe UI", Font.ITALIC, 13));
         placeholder.setForeground(TEXT_MUTED);
-        placeholder.setName("placeholder");
         resultCard.add(placeholder, BorderLayout.CENTER);
 
         return resultCard;
@@ -198,7 +168,6 @@ public class DeleteEmployees {
     private void populateResultCard(Employee emp) {
         resultCard.removeAll();
 
-        // Title row
         JLabel header = new JLabel("Employee Details");
         header.setFont(new Font("Segoe UI", Font.BOLD, 14));
         header.setForeground(PRIMARY);
@@ -212,7 +181,6 @@ public class DeleteEmployees {
         top.add(header, BorderLayout.NORTH);
         top.add(sep,    BorderLayout.SOUTH);
 
-        // Detail grid
         JPanel grid = new JPanel(new GridLayout(3, 4, 14, 10));
         grid.setOpaque(false);
         grid.setBorder(new EmptyBorder(10, 0, 0, 0));
@@ -221,12 +189,13 @@ public class DeleteEmployees {
         lblDept  = new JLabel(); lblPos   = new JLabel();
         lblEmail = new JLabel(); lblPhone = new JLabel();
 
-        grid.add(detailBlock("Employee ID",  String.valueOf(emp.id),  lblEmpId));
-        grid.add(detailBlock("Full Name",    emp.name,                lblName));
-        grid.add(detailBlock("Department",   emp.department,          lblDept));
-        grid.add(detailBlock("Position",     emp.position,            lblPos));
-        grid.add(detailBlock("Email",        emp.email,               lblEmail));
-        grid.add(detailBlock("Phone",        emp.phone,               lblPhone));
+        // Use getEmployeeId(), getFirstName()+getLastName(), getDepartment(), etc.
+        grid.add(detailBlock("Employee ID",  String.valueOf(emp.getEmployeeId()), lblEmpId));
+        grid.add(detailBlock("Full Name",    fullName(emp),                       lblName));
+        grid.add(detailBlock("Department",   emp.getDepartment(),                 lblDept));
+        grid.add(detailBlock("Position",     emp.getPosition(),                   lblPos));
+        grid.add(detailBlock("Email",        emp.getEmail(),                      lblEmail));
+        grid.add(detailBlock("Phone",        emp.getPhone(),                      lblPhone));
 
         resultCard.add(top,  BorderLayout.NORTH);
         resultCard.add(grid, BorderLayout.CENTER);
@@ -243,7 +212,7 @@ public class DeleteEmployees {
         lbl.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         lbl.setForeground(TEXT_MUTED);
 
-        valueLabel.setText(value);
+        valueLabel.setText(value != null ? value : "—");
         valueLabel.setFont(FONT_VALUE);
         valueLabel.setForeground(TEXT_MAIN);
 
@@ -308,13 +277,13 @@ public class DeleteEmployees {
             return;
         }
 
-        // ── Step 3: Employee search ──
-        currentEmployee = mockDb.get(id);  // replace with DB call later
+        // Real DB lookup via EmployeeDAO.getEmployeeById(int)
+        currentEmployee = dao.getEmployeeById(id);
 
         if (currentEmployee != null) {
             populateResultCard(currentEmployee);
             deleteBtn.setEnabled(true);
-            setStatus("Employee found: " + currentEmployee.name + ". Review details below.", TEXT_MAIN);
+            setStatus("Employee found: " + fullName(currentEmployee) + ". Review details below.", TEXT_MAIN);
         } else {
             resetResultCard();
             deleteBtn.setEnabled(false);
@@ -325,11 +294,10 @@ public class DeleteEmployees {
     private void handleDelete() {
         if (currentEmployee == null) return;
 
-        // ── Step 5: Confirmation dialog ──
         String msg = "<html><b>Are you sure you want to delete this employee?</b><br><br>"
-                   + "ID: "         + currentEmployee.id         + "<br>"
-                   + "Name: "       + currentEmployee.name       + "<br>"
-                   + "Department: " + currentEmployee.department + "<br><br>"
+                   + "ID: "         + currentEmployee.getEmployeeId()  + "<br>"
+                   + "Name: "       + fullName(currentEmployee)        + "<br>"
+                   + "Department: " + currentEmployee.getDepartment()  + "<br><br>"
                    + "<font color='#E63946'>This action cannot be undone.</font></html>";
 
         int choice = JOptionPane.showConfirmDialog(
@@ -339,26 +307,28 @@ public class DeleteEmployees {
                 JOptionPane.WARNING_MESSAGE);
 
         if (choice == JOptionPane.YES_OPTION) {
-            // ── Step 6: Delete from DB (mock for now) ──
-            // TODO: employeeDAO.deleteById(currentEmployee.id);
-            mockDb.remove(currentEmployee.id);
+            // Real DB delete via EmployeeDAO.deleteEmployee(int) → returns boolean
+            boolean deleted = dao.deleteEmployee(currentEmployee.getEmployeeId());
 
-            // ── Step 7: Success message ──
-            JOptionPane.showMessageDialog(
-                    frame,
-                    "<html><b>Employee deleted successfully.</b><br>"
-                  + currentEmployee.name + " (ID: " + currentEmployee.id + ") has been removed.</html>",
-                    "Deleted Successfully",
-                    JOptionPane.INFORMATION_MESSAGE);
+            if (deleted) {
+                JOptionPane.showMessageDialog(
+                        frame,
+                        "<html><b>Employee deleted successfully.</b><br>"
+                      + fullName(currentEmployee)
+                      + " (ID: " + currentEmployee.getEmployeeId() + ") has been removed.</html>",
+                        "Deleted Successfully",
+                        JOptionPane.INFORMATION_MESSAGE);
 
-            // Reset UI
-            currentEmployee = null;
-            idField.setText("");
-            resetResultCard();
-            deleteBtn.setEnabled(false);
-            setStatus("Employee deleted successfully. You may search for another.", SUCCESS);
+                currentEmployee = null;
+                idField.setText("");
+                resetResultCard();
+                deleteBtn.setEnabled(false);
+                setStatus("Employee deleted successfully. You may search for another.", SUCCESS);
+            } else {
+                showError("Deletion failed. The record may no longer exist, or a database error occurred.");
+                setStatus("Deletion failed — please try again.", ACCENT);
+            }
         }
-        // if NO — do nothing, stay on the screen
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -385,10 +355,9 @@ public class DeleteEmployees {
         btn.setOpaque(true);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btn.setBorder(new EmptyBorder(10, 20, 10, 20));
-
         btn.addMouseListener(new MouseAdapter() {
-            final Color normal  = bg;
-            final Color hover   = bg.darker();
+            final Color normal = bg;
+            final Color hover  = bg.darker();
             @Override public void mouseEntered(MouseEvent e) { if (btn.isEnabled()) btn.setBackground(hover); }
             @Override public void mouseExited (MouseEvent e) { btn.setBackground(normal); }
         });
@@ -405,6 +374,6 @@ public class DeleteEmployees {
     }
 
     private void showError(String msg) {
-        JOptionPane.showMessageDialog(frame, msg, "Invalid Input", JOptionPane.ERROR_MESSAGE);
+        JOptionPane.showMessageDialog(frame, msg, "Error", JOptionPane.ERROR_MESSAGE);
     }
 }

@@ -7,6 +7,7 @@ import java.util.*;
 import java.util.List;
 import javax.swing.*;
 import javax.swing.border.*;
+import javax.swing.plaf.basic.BasicComboBoxRenderer;
 
 public class AttendanceEntryGUI {
 
@@ -17,7 +18,7 @@ public class AttendanceEntryGUI {
         Employee(int id, String name, String department) {
             this.id = id; this.name = name; this.department = department;
         }
-        @Override public String toString() { return id + "  —  " + name; }
+        @Override public String toString() { return id + "  \u2014  " + name; }
     }
 
     // ── Attendance Record ────────────────────────────────────────────────────
@@ -40,7 +41,7 @@ public class AttendanceEntryGUI {
     private static final Color CARD       = new Color(0x1E2F42);
     private static final Color BORDER_CLR = new Color(0x2A3F58);
     private static final Color PRIMARY    = new Color(0x0EA5E9);
-    private static final Color SUCCESS    = new Color(0x15803D);   // darker green for Present
+    private static final Color SUCCESS    = new Color(0x15803D);
     private static final Color LATE       = new Color(0xF59E0B);
     private static final Color ABSENT     = new Color(0xEF4444);
     private static final Color LEAVE      = new Color(0xA78BFA);
@@ -72,17 +73,18 @@ public class AttendanceEntryGUI {
     private JTextArea           notesArea;
     private JLabel              statusBar, summaryLabel;
 
-    // Calendar state
-    private Calendar  calSelected;
-    private JPanel    calGrid;
-    private JLabel    calMonthLabel;
+    private Calendar calSelected;
+    private JPanel   calGrid;
+    private JLabel   calMonthLabel;
 
     private static final String[] STATUSES  = {"Present", "Late", "Absent", "On Leave"};
     private static final String[] DAY_NAMES = {"Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"};
 
     // ── Entry ────────────────────────────────────────────────────────────────
     public static void main(String[] args) {
-        try { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); }
+        // FIX 1: Use cross-platform (Metal) LAF so our custom colors aren't
+        //         overridden by the Windows/system theme.
+        try { UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName()); }
         catch (Exception ignored) {}
         SwingUtilities.invokeLater(() -> new AttendanceEntryGUI().buildUI());
     }
@@ -103,7 +105,7 @@ public class AttendanceEntryGUI {
         seedData();
         calSelected = Calendar.getInstance();
 
-        frame = new JFrame("Payroll Management  ·  Attendance Entry");
+        frame = new JFrame("Payroll Management  \u00b7  Attendance Entry");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(600, 780);
         frame.setLocationRelativeTo(null);
@@ -189,11 +191,34 @@ public class AttendanceEntryGUI {
         empCombo.setFont(FONT_FIELD);
         empCombo.setBackground(FIELD_BG);
         empCombo.setForeground(TEXT_MAIN);
-        empCombo.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(BORDER_CLR, 1, true),
-                new EmptyBorder(6, 10, 6, 10)));
         empCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
         empCombo.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        // FIX 2: Custom renderer so dropdown list items are dark-bg + light text
+        empCombo.setRenderer(new BasicComboBoxRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList list, Object value,
+                    int index, boolean isSelected, boolean cellHasFocus) {
+                JLabel lbl = (JLabel) super.getListCellRendererComponent(
+                        list, value, index, isSelected, cellHasFocus);
+                lbl.setFont(FONT_FIELD);
+                if (isSelected) {
+                    lbl.setBackground(PRIMARY);
+                    lbl.setForeground(Color.WHITE);
+                } else {
+                    lbl.setBackground(FIELD_BG);
+                    lbl.setForeground(TEXT_MAIN);
+                }
+                lbl.setBorder(new EmptyBorder(6, 10, 6, 10));
+                return lbl;
+            }
+        });
+
+        // Style the combo box editor (the visible field when closed)
+        empCombo.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BORDER_CLR, 1),
+                new EmptyBorder(4, 8, 4, 8)));
+
         empCombo.addActionListener(e -> refreshEmployeeCard());
 
         section.add(empCombo);
@@ -254,12 +279,11 @@ public class AttendanceEntryGUI {
         widget.setMaximumSize(new Dimension(Integer.MAX_VALUE, 270));
         widget.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Nav row
         JPanel nav = new JPanel(new BorderLayout());
         nav.setOpaque(false);
 
-        JButton prevBtn = calNavBtn("‹");
-        JButton nextBtn = calNavBtn("›");
+        JButton prevBtn = calNavBtn("\u2039");
+        JButton nextBtn = calNavBtn("\u203a");
         calMonthLabel = new JLabel("", SwingConstants.CENTER);
         calMonthLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
         calMonthLabel.setForeground(TEXT_MAIN);
@@ -271,7 +295,6 @@ public class AttendanceEntryGUI {
         nav.add(calMonthLabel, BorderLayout.CENTER);
         nav.add(nextBtn,       BorderLayout.EAST);
 
-        // Day-name headers
         JPanel dayHeaders = new JPanel(new GridLayout(1, 7, 4, 0));
         dayHeaders.setOpaque(false);
         for (String d : DAY_NAMES) {
@@ -315,13 +338,14 @@ public class AttendanceEntryGUI {
             boolean isToday = today.get(Calendar.YEAR)         == calSelected.get(Calendar.YEAR)
                            && today.get(Calendar.MONTH)        == calSelected.get(Calendar.MONTH)
                            && today.get(Calendar.DAY_OF_MONTH) == day;
-            boolean isSel   = selDay == day;
+            boolean isSel = selDay == day;
 
             JButton btn = new JButton(String.valueOf(day));
             btn.setFont(new Font("Segoe UI", isSel ? Font.BOLD : Font.PLAIN, 12));
             btn.setFocusPainted(false);
             btn.setBorderPainted(false);
             btn.setOpaque(true);
+            btn.setContentAreaFilled(true);  // ensure background paints
             btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
             if (isSel) {
@@ -388,7 +412,7 @@ public class AttendanceEntryGUI {
         section.add(spacer(10));
 
         Color[]  colors = {SUCCESS, LATE, ABSENT, LEAVE};
-        String[] icons  = {"✓", "◷", "✗", "◈"};
+        String[] icons  = {"\u2713", "\u25f7", "\u2717", "\u25c8"};
 
         JPanel btnRow = new JPanel(new GridLayout(1, 4, 10, 0));
         btnRow.setOpaque(false);
@@ -406,6 +430,7 @@ public class AttendanceEntryGUI {
             btn.setFont(FONT_STATUS);
             btn.setFocusPainted(false);
             btn.setOpaque(true);
+            btn.setContentAreaFilled(true);  // FIX 3: ensure background actually paints
             btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
             styleStatusBtn(btn, STATUSES[i].equals(selectedStatus), clr);
@@ -475,6 +500,7 @@ public class AttendanceEntryGUI {
         JButton clearBtn = styledButton("Clear", CARD, TEXT_MUTED, BORDER_CLR);
         clearBtn.addActionListener(e -> handleClear());
 
+        // FIX 4: Save button — solid PRIMARY background with white text, always visible
         JButton saveBtn = styledButton("Save Attendance Record", PRIMARY, Color.WHITE, PRIMARY);
         saveBtn.addActionListener(e -> handleSave());
 
@@ -495,7 +521,7 @@ public class AttendanceEntryGUI {
         statusBar.setFont(FONT_SMALL);
         statusBar.setForeground(TEXT_MUTED);
 
-        JLabel hint = new JLabel("Data is mock — will be linked to MySQL.");
+        JLabel hint = new JLabel("Data is mock \u2014 will be linked to MySQL.");
         hint.setFont(new Font("Segoe UI", Font.ITALIC, 11));
         hint.setForeground(new Color(0x2A3F58));
 
@@ -574,6 +600,7 @@ public class AttendanceEntryGUI {
         btn.setForeground(fg);
         btn.setFocusPainted(false);
         btn.setOpaque(true);
+        btn.setContentAreaFilled(true);   // FIX 5: force background to render
         btn.setBorderPainted(true);
         btn.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(border, 1, true),
