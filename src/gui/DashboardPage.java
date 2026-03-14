@@ -48,8 +48,9 @@ public class DashboardPage extends JFrame {
         menuPayroll.add(miPayroll);
 
         JMenu menuHelp = new JMenu("Help");
-        JMenuItem miAbout = new JMenuItem("About");
-        menuHelp.add(miAbout);
+        JMenuItem miSettings = new JMenuItem("Settings");
+        JMenuItem miAbout    = new JMenuItem("About");
+        menuHelp.add(miSettings); menuHelp.addSeparator(); menuHelp.add(miAbout);
 
         menuBar.add(menuFile); menuBar.add(menuEmployee);
         menuBar.add(menuAttendance); menuBar.add(menuPayroll); menuBar.add(menuHelp);
@@ -74,9 +75,10 @@ public class DashboardPage extends JFrame {
         JButton btnDeleteNav     = makeNavBtn("🗑 Delete",         new Color(60, 100, 180));
         JButton btnAttendanceNav = makeNavBtn("📋 Attendance",     new Color(60, 100, 180));
         JButton btnPayrollNav    = makeNavBtn("💰 Payroll",        new Color(60, 100, 180));
+        JButton btnSettingsNav   = makeNavBtn("⚙️ Settings",       new Color(60, 100, 180));
         JButton btnLogoutNav     = makeNavBtn("🚪 Logout",         new Color(160, 40, 40));
 
-        for (JButton b : new JButton[]{btnAddNav,btnUpdateNav,btnViewNav,btnDeleteNav,btnAttendanceNav,btnPayrollNav,btnLogoutNav})
+        for (JButton b : new JButton[]{btnAddNav,btnUpdateNav,btnViewNav,btnDeleteNav,btnAttendanceNav,btnPayrollNav,btnSettingsNav,btnLogoutNav})
             navButtons.add(b);
         navBar.add(navButtons, BorderLayout.EAST);
 
@@ -136,7 +138,9 @@ public class DashboardPage extends JFrame {
         miAttendance.addActionListener(e     -> new AttendanceEntryGUI().buildUI());
         btnPayrollNav.addActionListener(e    -> new SalaryManagementGUI().buildUI());
         miPayroll.addActionListener(e        -> new SalaryManagementGUI().buildUI());
-      
+        btnSettingsNav.addActionListener(e   -> openSettings());
+        miSettings.addActionListener(e       -> openSettings());
+
         btnLogoutNav.addActionListener(e     -> logout());
         miLogout.addActionListener(e         -> logout());
         miExit.addActionListener(e           -> System.exit(0));
@@ -149,7 +153,6 @@ public class DashboardPage extends JFrame {
         qaDel.addActionListener(e   -> new DeleteEmployees().buildUI());
         qaAtt.addActionListener(e   -> new AttendanceEntryGUI().buildUI());
         qaPay.addActionListener(e   -> new SalaryManagementGUI().buildUI());
-       
     }
 
     private void loadStats() {
@@ -165,16 +168,155 @@ public class DashboardPage extends JFrame {
     }
 
     private void openAddEmployee()    { new AddEmployeePage(this).setVisible(true); }
-    private void openUpdateEmployee() {
-        new UpdateEmployeePage(this);
-    }
-    public void refresh() { loadStats(); }
+    private void openUpdateEmployee() { new UpdateEmployeePage(this); }
+    private void openSettings()       { new SettingsDialog(this).setVisible(true); }
+    public  void refresh()            { loadStats(); }
 
     private void logout() {
         int c = JOptionPane.showConfirmDialog(this,"Are you sure you want to logout?","Logout",JOptionPane.YES_NO_OPTION);
         if (c == JOptionPane.YES_OPTION) { new LoginPage().setVisible(true); dispose(); }
     }
 
+    static class SettingsDialog extends JDialog {
+
+        SettingsDialog(JFrame parent) {
+            super(parent, "Employee Management – Settings", true);
+            setSize(600, 520);
+            setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+            setLocationRelativeTo(parent);
+            setResizable(false);
+
+            JPanel main = new JPanel(new BorderLayout());
+            main.setBackground(Color.WHITE);
+
+            // Title bar
+            JLabel title = new JLabel("  ⚙️  Settings");
+            title.setFont(new Font("Segoe UI", Font.BOLD, 18));
+            title.setForeground(Color.WHITE);
+            title.setOpaque(true);
+            title.setBackground(new Color(30, 60, 114));
+            title.setPreferredSize(new Dimension(0, 48));
+            main.add(title, BorderLayout.NORTH);
+
+            // Tabs
+            JTabbedPane tabs = new JTabbedPane();
+            tabs.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+            tabs.addTab("General",  buildGeneralTab());
+            tabs.addTab("Account",  buildAccountTab());
+            tabs.addTab("Database", buildDatabaseTab());
+            main.add(tabs, BorderLayout.CENTER);
+
+            // Bottom buttons
+            JPanel btnBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+            btnBar.setBackground(new Color(0xF5F5F5));
+            btnBar.setBorder(new MatteBorder(1, 0, 0, 0, Color.LIGHT_GRAY));
+            JButton cancel = new JButton("Cancel");
+            JButton save   = new JButton("Save Changes");
+            save.setBackground(new Color(30, 60, 114));
+            save.setForeground(Color.WHITE);
+            save.setFocusPainted(false);
+            btnBar.add(cancel);
+            btnBar.add(save);
+            main.add(btnBar, BorderLayout.SOUTH);
+
+            cancel.addActionListener(e -> dispose());
+            save.addActionListener(e -> {
+                JOptionPane.showMessageDialog(this, "Settings saved successfully.",
+                        "Saved", JOptionPane.INFORMATION_MESSAGE);
+                dispose();
+            });
+
+            setContentPane(main);
+        }
+
+        private JPanel buildGeneralTab() {
+            JPanel p = tabPanel();
+            p.add(sectionLabel("Company Information"));
+            p.add(row("Company Name:",  new JTextField()));
+            p.add(row("Industry:",      combo(new String[]{"Technology","Finance","Healthcare","Retail","Education"})));
+            p.add(row("Company Email:", new JTextField()));
+            p.add(row("Phone:",         new JTextField()));
+            p.add(Box.createVerticalStrut(12));
+            p.add(sectionLabel("Regional"));
+            p.add(row("Timezone:",    combo(new String[]{"UTC-5 Eastern","UTC-6 Central","UTC-8 Pacific","UTC+0 London"})));
+            p.add(row("Date Format:", combo(new String[]{"MM/DD/YYYY","DD/MM/YYYY","YYYY-MM-DD"})));
+            p.add(row("Currency:",    combo(new String[]{"USD — US Dollar","EUR — Euro","GBP — Pound"})));
+            return p;
+        }
+
+        private JPanel buildAccountTab() {
+            JPanel p = tabPanel();
+            p.add(sectionLabel("Profile"));
+            p.add(row("First Name:",  new JTextField()));
+            p.add(row("Last Name:",   new JTextField()));
+            p.add(row("Email:",       new JTextField()));
+            p.add(row("Department:",  combo(new String[]{"IT","HR","Finance","Operations","Sales"})));
+            p.add(Box.createVerticalStrut(12));
+            p.add(sectionLabel("Change Password"));
+            p.add(row("Current Password:", new JPasswordField()));
+            p.add(row("New Password:",      new JPasswordField()));
+            p.add(row("Confirm Password:",  new JPasswordField()));
+            return p;
+        }
+
+        private JPanel buildDatabaseTab() {
+            JPanel p = tabPanel();
+            p.add(sectionLabel("Connection"));
+            p.add(row("Host:",     new JTextField()));
+            p.add(row("Port:",     new JTextField()));
+            p.add(row("Username:", new JTextField()));
+            p.add(row("Password:", new JPasswordField()));
+            p.add(Box.createVerticalStrut(14));
+            JButton test = new JButton("Test Connection");
+            test.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+            test.addActionListener(e -> JOptionPane.showMessageDialog(this,
+                    "Connection test not yet implemented.", "Test Connection", JOptionPane.INFORMATION_MESSAGE));
+            p.add(test);
+            return p;
+        }
+
+        private JPanel tabPanel() {
+            JPanel p = new JPanel();
+            p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
+            p.setBackground(Color.WHITE);
+            p.setBorder(new EmptyBorder(16, 20, 16, 20));
+            return p;
+        }
+
+        private JLabel sectionLabel(String text) {
+            JLabel l = new JLabel(text);
+            l.setFont(new Font("Segoe UI", Font.BOLD, 12));
+            l.setForeground(new Color(30, 60, 114));
+            l.setBorder(new CompoundBorder(
+                new MatteBorder(0, 0, 1, 0, new Color(0xDDEEFF)),
+                new EmptyBorder(0, 0, 6, 0)));
+            l.setAlignmentX(LEFT_ALIGNMENT);
+            l.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
+            return l;
+        }
+
+        private JPanel row(String labelText, JComponent field) {
+            JPanel row = new JPanel(new BorderLayout(10, 0));
+            row.setBackground(Color.WHITE);
+            row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
+            row.setBorder(new EmptyBorder(4, 0, 4, 0));
+            JLabel label = new JLabel(labelText);
+            label.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+            label.setPreferredSize(new Dimension(150, 24));
+            field.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+            row.add(label, BorderLayout.WEST);
+            row.add(field, BorderLayout.CENTER);
+            return row;
+        }
+
+        private JComboBox<String> combo(String[] items) {
+            return new JComboBox<>(items);
+        }
+    }
+
+    // =========================================================================
+    //  UI HELPERS
+    // =========================================================================
     private JPanel makeStatCard(String title, JLabel valueLabel, Color c1, Color c2) {
         JPanel card = new JPanel(new BorderLayout()) {
             public void paintComponent(Graphics g) {
@@ -239,6 +381,9 @@ public class DashboardPage extends JFrame {
         return btn;
     }
 
+    // =========================================================================
+    //  BAR CHART
+    // =========================================================================
     class BarChart extends JPanel {
         private final Map<String,Integer> counts = new LinkedHashMap<>();
         private final Color[] COLORS = {
